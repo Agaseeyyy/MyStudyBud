@@ -1,6 +1,6 @@
 import { View, Text, TouchableOpacity, Alert } from 'react-native';
 import AddButton from './AddButton';
-import HamburgerMenu from './ContextMenu';
+import ContextMenu from './ContextMenu';
 import AddItem from './AddItem';
 import { addTaskToSubject } from '../utils/taskUtils';
 import { useState } from 'react';
@@ -16,13 +16,14 @@ export default function SubjectList({
 }) {
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
 
-  const handleAddTask = async (taskName) => {
+  const handleAddTask = async (taskName, taskDateTime) => {
     try {
       const updatedSubjects = await addTaskToSubject(
         taskName, 
         selectedProgram, 
         selectedYrLevel, 
-        subjectName
+        subjectName,
+        taskDateTime // Pass the date and time
       );
 
       if (onTaskAdded && updatedSubjects) {
@@ -78,12 +79,12 @@ export default function SubjectList({
       <TouchableOpacity   
         onPress={onPress}
         activeOpacity={0.8} 
-        className='flex justify-between item pb-4 w-full h-auto pl-5 mb-5 rounded-lg drop-shadow-xl bg-[#fff] shadow'
+        className='flex justify-between item pb-4 w-full h-auto pl-5 mb-3 rounded-lg drop-shadow-xl bg-[#fff] shadow'
       >
         <View className='flex flex-row items-center justify-between w-full '>
           <Text className='text-lg font-LexendDecaSemiBold '>{subjectName}</Text> 
           <View>
-            <HamburgerMenu icon={'dots-vertical'} options={menuOptions} />
+            <ContextMenu icon={'dots-vertical'} options={menuOptions} />
           </View>    
         </View>
         <AddButton 

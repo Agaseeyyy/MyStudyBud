@@ -1,18 +1,25 @@
 import { saveDataToStorage, getDataFromStorage } from './asyncStorageUtils';
+import { scheduleTaskDeadlineNotifications } from './notificationUtils';
 
-// Generic function to add a task to a specific subject
+// Add notification scheduling to existing functions
+
 export const addTaskToSubject = async (
   taskName, 
   selectedProgram, 
   selectedYrLevel, 
-  selectedSubject
+  selectedSubject,
+  dateTime = null
 ) => {
   try {
     // Get current stored data
     const storedData = await getDataFromStorage() || {};
 
-    // Create new task
-    const newTask = { name: taskName, completed: false };
+    // Create new task with optional dateTime
+    const newTask = { 
+      name: taskName, 
+      completed: false,
+      ...(dateTime && { dateTime: dateTime.toISOString() }) 
+    };
 
     // Ensure the program, year level, and subject exist in the data structure
     const updatedData = {
@@ -35,6 +42,9 @@ export const addTaskToSubject = async (
     // Save updated data to storage
     await saveDataToStorage(updatedData);
 
+    // Reschedule notifications
+    await scheduleTaskDeadlineNotifications();
+
     // Return the updated subjects for the current program and year level
     return updatedData[selectedProgram][selectedYrLevel].subjects;
   } catch (error) {
@@ -43,7 +53,6 @@ export const addTaskToSubject = async (
   }
 };
 
-// Generic function to toggle task completion
 export const toggleTaskCompletion = async (
   taskIndex, 
   selectedProgram, 
@@ -81,6 +90,9 @@ export const toggleTaskCompletion = async (
     // Save updated data to storage
     await saveDataToStorage(updatedData);
 
+    // Reschedule notifications
+    await scheduleTaskDeadlineNotifications();
+
     // Return the updated tasks
     return updatedTasks;
   } catch (error) {
@@ -89,7 +101,6 @@ export const toggleTaskCompletion = async (
   }
 };
 
-// Generic function to delete a task from a specific subject
 export const deleteTaskFromSubject = async (
   taskIndex, 
   selectedProgram, 
@@ -125,6 +136,9 @@ export const deleteTaskFromSubject = async (
     // Save updated data to storage
     await saveDataToStorage(updatedData);
 
+    // Reschedule notifications
+    await scheduleTaskDeadlineNotifications();
+
     // Return the updated tasks
     return updatedTasks;
   } catch (error) {
@@ -133,13 +147,13 @@ export const deleteTaskFromSubject = async (
   }
 };
 
-// Generic function to edit a task in a specific subject
 export const editTaskInSubject = async (
   taskIndex, 
   newTaskName,
   selectedProgram, 
   selectedYrLevel, 
-  selectedSubject
+  selectedSubject,
+  newDateTime = null
 ) => {
   try {
     // Get current stored data
@@ -152,7 +166,11 @@ export const editTaskInSubject = async (
     // Create updated tasks with edited task
     const updatedTasks = currentTasks.map((task, index) => 
       index === taskIndex 
-        ? { ...task, name: newTaskName } 
+        ? { 
+            ...task, 
+            name: newTaskName,
+            ...(newDateTime ? { dateTime: newDateTime.toISOString() } : {}) 
+          } 
         : task
     );
 
@@ -173,6 +191,9 @@ export const editTaskInSubject = async (
 
     // Save updated data to storage
     await saveDataToStorage(updatedData);
+
+    // Reschedule notifications
+    await scheduleTaskDeadlineNotifications();
 
     // Return the updated tasks
     return updatedTasks;

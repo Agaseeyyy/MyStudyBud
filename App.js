@@ -11,35 +11,93 @@ import HomeScreen from './screens/HomeScreen';
 import ProfileScreen from './screens/ProfileScreen';
 import AboutScreen from './screens/AboutScreen';
 import ViewTask from './screens/ViewTask';
+import Onboarding from './screens/Onboarding';
 import AppLoading from './components/AppLoading';
 import { getUserProfile } from './utils/asyncStorageUtils';
+import { initializeNotifications } from './utils/notificationUtils';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
+// Create navigation stacks
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 
 export default function App() {
+  // State variables for managing app initialization and user profile
   const [initialProfileParams, setInitialProfileParams] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isFirstLaunch, setIsFirstLaunch] = useState(null);
 
-  // Load saved profile when app starts
+  // Initialize notifications on app startup
   useEffect(() => {
-    const loadSavedProfile = async () => {
+    initializeNotifications();
+  }, []);
+
+  // Check if this is the first app launch
+  useEffect(() => {
+    const checkFirstLaunch = async () => {
       try {
-        const savedProfile = await getUserProfile();
-        if (savedProfile) {
-          setInitialProfileParams(savedProfile);
+        const hasLaunchedBefore = await AsyncStorage.getItem('hasLaunchedBefore');
+        
+        // Set first launch status and store launch information
+        if (hasLaunchedBefore === null) {
+          setIsFirstLaunch(true);
+          await AsyncStorage.setItem('hasLaunchedBefore', 'true');
+        } else {
+          setIsFirstLaunch(false);
         }
+        
         setIsLoading(false);
       } catch (error) {
-        console.error('Error loading saved profile in App.js:', error);
+        console.error('Error checking first launch:', error);
+        setIsFirstLaunch(false);
         setIsLoading(false);
       }
     };
 
-    loadSavedProfile();
+    checkFirstLaunch();
   }, []);
 
-  // Show loading state if profile is being loaded
+  // Load saved user profile when app starts
+  useEffect(() => {
+    const loadSavedProfile = async () => {
+      try {
+        const savedProfile = await getUserProfile();
+        
+        // Define default profile in case no saved profile exists
+        const defaultProfile = {
+          studentName: 'Student',
+          selectedProgram: 'BSIT',
+          selectedYrLevel: '1'
+        };
+  
+        // Set initial profile params with saved or default profile
+        setInitialProfileParams(
+          savedProfile && 
+          savedProfile.studentName && 
+          savedProfile.selectedProgram && 
+          savedProfile.selectedYrLevel 
+            ? savedProfile 
+            : defaultProfile
+        );
+      } catch (error) {
+        console.error('Error loading saved profile in App.js:', error);
+        
+        // Set default profile in case of error
+        setInitialProfileParams({
+          studentName: 'Student',
+          selectedProgram: 'BSIT',
+          selectedYrLevel: '1'
+        });
+      }
+    };
+  
+    // Only load profile if not first launch
+    if (!isFirstLaunch) {
+      loadSavedProfile();
+    }
+  }, [isFirstLaunch]);
+
+  // Show loading screen while determining first launch status and profile
   if (isLoading) {
     return <AppLoading><View /></AppLoading>;
   }
@@ -48,8 +106,9 @@ export default function App() {
     <AppLoading>
       <MenuProvider>
         <NavigationContainer className='flex-1 bg-light'>
+          {/* Main Stack Navigator */}
           <Stack.Navigator 
-            initialRouteName={initialProfileParams ? 'HomeStack' : 'Profile'}
+            initialRouteName={isFirstLaunch ? 'Onboarding' : (initialProfileParams ? 'HomeStack' : 'Profile')}
             screenOptions={{
               headerTintColor: '#fff',
               headerStyle: {
@@ -62,17 +121,32 @@ export default function App() {
               },
             }}
           >
+            {/* Conditional Onboarding Screen */}
+            {isFirstLaunch && (
+              <Stack.Screen
+                name="Onboarding"
+                component={Onboarding}
+                options={{headerShown: false}}
+              />
+            )}
+
+            {/* Profile Setup Screen */}
+            <Stack.Screen
+              name="Profile"
+              component={ProfileScreen}
+              options={{headerShown: false}}
+              initialParams={{ isFirstLaunch }}
+            />
+
+            {/* Home Stack with Bottom Tab Navigation */}
             <Stack.Screen
               options={{headerShown: false}}
               name="HomeStack"
               component={BottomBar}
               initialParams={initialProfileParams || {}}
             />
-            <Stack.Screen
-              name="Profile"
-              component={ProfileScreen}
-              options={{headerShown: false}}
-            />
+
+            {/* Individual Task View Screen */}
             <Stack.Screen
               name="Task"
               component={ViewTask}
@@ -93,56 +167,88 @@ export default function App() {
   );
 }
 
+// Bottom Tab Navigation Component
 function BottomBar({ route }) {
   const [studentName, setStudentName] = useState(route.params?.studentName || 'Student');
-  
+
   return (
     <View style={{ flex: 1 }}>
+      {/* Bottom Tab Navigator */}
       <Tab.Navigator 
         screenOptions={({ route }) => ({
+          // Tab Navigator styling and configuration
           headerTintColor: '#fff',
           headerStyle: {
             backgroundColor: '#A0D683',
             height: 100,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 4,
+            elevation: 5,
           },
           headerTitleStyle: {
             fontFamily: 'LexendDeca-Bold',                
             fontSize: 20,
           },
           tabBarStyle: {
-            marginHorizontal: 10,
-            height: 55,
+            marginHorizontal: 20,
+            height: 60,
             position: 'absolute',
             bottom: 25,
             left: 0,
             right: 0,
             backgroundColor: '#fff',
-            borderRadius: 100,
-            elevation: 4, 
-            shadowOpacity: 4,
-            paddingBottom: 10,
-            paddingTop: 10,         
+            borderRadius: 30, 
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.1,
+            shadowRadius: 6,
+            elevation: 6, 
+            paddingBottom: 5,
+            paddingTop: 5,
+            borderWidth: 1, 
+            borderColor: '#E5E7EB', 
           },
           tabBarActiveTintColor: '#A0D683',
-          tabBarIcon: ({ color }) => {
+          tabBarInactiveTintColor: '#9CA3AF', 
+          tabBarIcon: ({ color, focused, size }) => {
             let iconName;
-
+            let iconSize = 22;
+          
             if (route.name == 'Home') {
-              iconName = 'home-outline';
-              setStudentName(route.params?.studentName || 'Student');
+              iconName = focused ? 'home' : 'home-outline';
             } else if (route.name === 'Profile') {
-              iconName = 'person-outline';
+              iconName = focused ? 'person' : 'person-outline';
             } else if (route.name === 'About us') {
-              iconName = 'code-slash';
+              iconName = focused ? 'code-slash' : 'code-outline';
             }
-
-            return <Ionicons name={iconName} size={20} color={color} />;
+            
+            return (
+              <View style={{
+                justifyContent: 'center', 
+                alignItems: 'center', 
+                paddingTop: 5, 
+              }}>
+                <Ionicons 
+                  name={iconName} 
+                  size={iconSize} 
+                  color={color} 
+                />
+              </View>
+            );
           },
           tabBarLabelStyle: {
             fontFamily: 'LexendDeca-Bold',
+            fontSize: 10,
+            marginBottom: 4,
+          },
+          tabBarItemStyle: {
+            borderRadius: 30,
           },
         })}
       >
+        {/* Home Tab */}
         <Tab.Screen 
           name='Home' 
           component={HomeScreen}   
@@ -157,6 +263,7 @@ function BottomBar({ route }) {
           }}   
         />
 
+        {/* Profile Tab */}
         <Tab.Screen 
           name='Profile' 
           component={ProfileScreen}
@@ -165,6 +272,7 @@ function BottomBar({ route }) {
           }}   
         />
         
+        {/* About Tab */}
         <Tab.Screen 
           name='About us'
           component={AboutScreen}

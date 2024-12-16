@@ -1,40 +1,39 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, Alert } from 'react-native';
+import { View, Text, FlatList, Alert, SafeAreaView } from 'react-native';
 import AddButton from '../components/AddButton';
 import SubjectList from '../components/SubjectList';
 import ContextMenu from '../components/ContextMenu';
-import { saveDataToStorage, getDataFromStorage, clearStoredData } from '../utils/asyncStorageUtils';
+import { saveDataToStorage, getDataFromStorage } from '../utils/asyncStorageUtils';
 
-const initialData = {
-  BSIT: { 1: { subjects: {} } },
-  BSCS: { 1: { subjects: {} }, 2: { subjects: {} } },
-  BSIS: { 1: { subjects: {} } }
-};
+// Initial data structure for different programs and year levels
+const initialData = {};
 
 export default function HomeScreen({ route, navigation }) {
-  // Provide default values to prevent undefined errors
+  // Extract program and year level from route params or use defaults
   const { 
     selectedProgram = 'BSIT', 
     selectedYrLevel = '1' 
   } = route.params || {};
 
+  // State management
   const [data, setData] = useState(initialData);
-  const [selectedSubject, setSelectedSubject] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [sortOrder, setSortOrder] = useState('name'); // Default sort order
+  const [sortOrder, setSortOrder] = useState('name');
 
-  // Ensure the selected program and year level exist in the data
+  // ---------- DATA INITIALIZATION AND STRUCTURE MANAGEMENT ----------
+
+  // Ensure the selected program and year level exist in the data structure
   useEffect(() => {
     setData(prevData => {
-      // Create a deep copy to avoid mutation
+      // Create a deep copy to avoid direct mutation
       const newData = JSON.parse(JSON.stringify(prevData));
       
-      // Ensure the selected program exists
+      // Validate and create program if it doesn't exist
       if (!newData[selectedProgram]) {
         newData[selectedProgram] = {};
       }
       
-      // Ensure the selected year level exists
+      // Validate and create year level if it doesn't exist
       if (!newData[selectedProgram][selectedYrLevel]) {
         newData[selectedProgram][selectedYrLevel] = { subjects: {} };
       }
@@ -43,7 +42,9 @@ export default function HomeScreen({ route, navigation }) {
     });
   }, [selectedProgram, selectedYrLevel]);
 
-  // Load data from AsyncStorage when component mounts and when navigating back
+  // ---------- DATA LOADING AND STORAGE ----------
+
+  // Load stored data when component mounts or navigates back
   useEffect(() => {
     const loadStoredData = async () => {
       try {
@@ -64,6 +65,7 @@ export default function HomeScreen({ route, navigation }) {
       }
     };
 
+    // Add listener for navigation focus to reload data
     const unsubscribe = navigation.addListener('focus', loadStoredData);
 
     // Initial load
@@ -72,13 +74,16 @@ export default function HomeScreen({ route, navigation }) {
     return unsubscribe;
   }, [navigation]);
 
-  // Save data to storage whenever data changes
+  // Automatically save data to storage when data changes
   useEffect(() => {
     if (!isLoading) {
       saveDataToStorage(data);
     }
   }, [data, isLoading]);
 
+  // ---------- DATA MANIPULATION HANDLERS ----------
+
+  // Add a new subject to the current program and year level
   const handleAddSubject = (subjectName) => {
     if (subjectName.trim()) {
       setData((prevData) => {
@@ -100,6 +105,7 @@ export default function HomeScreen({ route, navigation }) {
     }
   };
 
+  // Update subjects for the current program and year level
   const handleUpdateSubjects = (updatedSubjects) => {
     setData(prevData => ({
       ...prevData,
@@ -112,6 +118,7 @@ export default function HomeScreen({ route, navigation }) {
     }));
   };
 
+  // Delete a subject from the current program and year level
   const handleDeleteSubject = (subjectToDelete) => {
     setData(prevData => {
       const updatedData = { ...prevData };
@@ -129,6 +136,7 @@ export default function HomeScreen({ route, navigation }) {
     });
   };
 
+  // Edit a subject name in the current program and year level
   const handleEditSubject = (oldSubjectName, newSubjectName) => {
     setData(prevData => {
       const updatedData = { ...prevData };
@@ -151,106 +159,143 @@ export default function HomeScreen({ route, navigation }) {
     });
   };
 
- // Sorting function
- const sortSubjects = (subjects) => {
-  const subjectsArray = Object.entries(subjects);
+  // ---------- SORTING METHODS ----------
 
-  switch (sortOrder) {
-    case 'name':
-      // Sort alphabetically by subject name
-      return Object.fromEntries(
-        subjectsArray.sort(([a], [b]) => a.localeCompare(b))
-      );
-    
-    case 'tasks':
-      // Sort by number of tasks (descending)
-      return Object.fromEntries(
-        subjectsArray.sort(([, tasksA], [, tasksB]) => 
-          (tasksB?.length || 0) - (tasksA?.length || 0)
-        )
-      );
-    
-    case 'random':
-      // Randomize order
-      return Object.fromEntries(
-        subjectsArray.sort(() => Math.random() - 0.5)
-      );
-    
-    default:
-      return subjects;
-  }
-};
+  // Sort subjects based on selected sort order
+  const sortSubjects = (subjects) => {
+    const subjectsArray = Object.entries(subjects);
 
-// Navigation effect to set header right component
-useEffect(() => {
-  // Sorting menu options
-  const sortingOptions = [
-    { 
-      label: 'Sort by Name', 
-      onSelect: () => setSortOrder('name') 
-    },
-    { 
-      label: 'Sort by Number of Tasks', 
-      onSelect: () => setSortOrder('tasks') 
-    },
-    { 
-      label: 'Random Order', 
-      onSelect: () => setSortOrder('random') 
+    switch (sortOrder) {
+      case 'name':
+        return Object.fromEntries(
+          subjectsArray.sort(([a], [b]) => a.localeCompare(b))
+        );
+      
+      case 'tasks':
+        return Object.fromEntries(
+          subjectsArray.sort(([, tasksA], [, tasksB]) => 
+            (tasksB?.length || 0) - (tasksA?.length || 0)
+          )
+        );
+      
+      case 'random':
+        return Object.fromEntries(
+          subjectsArray.sort(() => Math.random() - 0.5)
+        );
+      
+      default:
+        return subjects;
     }
-  ];
+  };
 
-  navigation.setOptions({
-    headerRight: () => (
-      <ContextMenu 
-        icon='sort' 
-        color='#fff' 
-        options={sortingOptions} 
-      />
-    )
-  });
-}, [navigation, sortOrder]);
+  // ---------- NAVIGATION EFFECTS ----------
 
-if (isLoading) {
-  return <View><Text>Loading...</Text></View>;
-}
+  // Set up sorting options in navigation header
+  useEffect(() => {
+    const sortingOptions = [
+      { 
+        label: 'Sort by Name', 
+        onSelect: () => setSortOrder('name') 
+      },
+      { 
+        label: 'Sort by Number of Tasks', 
+        onSelect: () => setSortOrder('tasks') 
+      },
+      { 
+        label: 'Random Order', 
+        onSelect: () => setSortOrder('random') 
+      }
+    ];
 
-const currentSubjects = 
-  data[selectedProgram]?.[selectedYrLevel]?.subjects || {};
+    navigation.setOptions({
+      headerRight: () => (
+        <ContextMenu 
+          icon='sort' 
+          color='#fff' 
+          options={sortingOptions} 
+        />
+      )
+    });
+  }, [navigation, sortOrder]);
 
-// Apply sorting to current subjects
-const sortedSubjects = sortSubjects(currentSubjects);
-  
+  // ---------- RENDERING METHODS ----------
+
+  // Show loading state while data is being initialized
+  if (isLoading) {
+    return (
+      <View className='items-center justify-center flex-1 bg-slate-100'>
+        <Text className='text-lg text-gray-500 font-LexendDecaSemiBold'>
+          Loading your courses...
+        </Text>
+      </View>
+    );
+  }
+
+  // Get current subjects for the selected program and year level
+  const currentSubjects = 
+    data[selectedProgram]?.[selectedYrLevel]?.subjects || {};
+
+  // Sort subjects based on current sort order
+  const sortedSubjects = sortSubjects(currentSubjects);
+  const subjectCount = Object.keys(sortedSubjects).length;
+
   return (
-    <View className='flex-col items-center justify-center flex-[0.91] p-5 bg-slate-100'>
-      <FlatList
-        data={Object.keys(sortedSubjects)}
-        keyExtractor={(item) => item}
-        renderItem={({ item }) => (
-          <SubjectList
-            subjectName={item}
-            selectedProgram={selectedProgram}
-            selectedYrLevel={selectedYrLevel}
-            onTaskAdded={handleUpdateSubjects}
-            onSubjectDeleted={handleDeleteSubject}
-            onSubjectEdited={handleEditSubject}
-            onPress={() =>
-              navigation.navigate('Task', {
-                selectedSubject: item,
-                currentSubjects: currentSubjects,
-                selectedProgram,
-                selectedYrLevel
-              })
-            }
-          />
-        )}
-      />
+    <SafeAreaView className='flex-1 bg-slate-100'>
+      <View className='flex-1 px-4 pt-4'>
+        {/* Program and Year Level Header */}
+        <View className='flex-row items-center justify-between mb-4'>
+          <Text className='text-2xl font-LexendDecaBold text-myPallet-100'>
+            {selectedProgram} - Year {selectedYrLevel}
+          </Text>
+          <Text className='text-base text-gray-600 font-LexendDecaRegular'>
+            {subjectCount} {subjectCount === 1 ? 'Course' : 'Courses'}
+          </Text>
+        </View>
 
-      <View>
+        {/* Empty State */}
+        {subjectCount === 0 && (
+          <View className='items-center justify-center flex-1 opacity-50'>
+            <Text className='text-lg text-center text-gray-500 font-LexendDecaSemiBold'>
+              No courses added yet.{'\n'}Tap "ADD COURSE" to get started!
+            </Text>
+          </View>
+        )}
+
+        {/* Subject List */}
+        <FlatList
+          data={Object.keys(sortedSubjects)}
+          keyExtractor={(item) => item}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 100 }}
+          renderItem={({ item }) => (
+            <SubjectList
+              subjectName={item}
+              selectedProgram={selectedProgram}
+              selectedYrLevel={selectedYrLevel}
+              onTaskAdded={handleUpdateSubjects}
+              onSubjectDeleted={handleDeleteSubject}
+              onSubjectEdited={handleEditSubject}
+              onPress={() =>
+                navigation.navigate('Task', {
+                  selectedSubject: item,
+                  currentSubjects: currentSubjects,
+                  selectedProgram,
+                  selectedYrLevel
+                })
+              }
+            />
+          )}
+        />
+      </View>
+
+      {/* Floating Add Button */}
+      <View className='absolute self-center bottom-28'>
         <AddButton 
           name='course' 
           addItem={handleAddSubject} 
+          className='shadow-lg'
         />
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
