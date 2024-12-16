@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Text, TextInput, View, TouchableOpacity, KeyboardAvoidingView, Alert } from 'react-native';
 import { Dropdown } from 'react-native-element-dropdown';
 import MaterialIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import Toast from 'react-native-toast-message';
 import { 
   saveUserProfile, 
   getUserProfile, 

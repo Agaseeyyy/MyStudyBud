@@ -3,12 +3,9 @@ import { View, Text, Alert, TextInput, Pressable, ScrollView } from 'react-nativ
 import { Swipeable, GestureHandlerRootView } from 'react-native-gesture-handler';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import DateTimePicker from '@react-native-community/datetimepicker';
-
-// Component imports
 import AddButton from '../components/AddButton';
 import ContextMenu from '../components/ContextMenu';
-
-// Utility imports for task management
+import Toast from 'react-native-toast-message';
 import { 
   addTaskToSubject, 
   toggleTaskCompletion, 
@@ -91,6 +88,16 @@ export default function ViewTask({ route, navigation }) {
     if (updatedSubjects) {
       setTasks(updatedSubjects[selectedSubject]);
     }
+
+     // Show success toast
+     Toast.show({
+      type: 'success',
+      text1: 'Task added successfully!',
+      text2: `${taskName} has been added.`,
+      visibilityTime: 4000,
+      position: 'bottom',
+      bottomOffset: 80,
+    });
   };
 
   /**
@@ -108,6 +115,17 @@ export default function ViewTask({ route, navigation }) {
     if (updatedTasks) {
       setTasks(updatedTasks);
     }
+
+    Toast.show({
+      type: 'info',
+      text1: 'Task status updated successfully!',
+      text2: updatedTasks[taskIndex].completed 
+        ? 'Task marked as completed' 
+        : 'Task marked as incomplete',
+      visibilityTime: 4000,
+      position: 'bottom',
+      bottomOffset: 80,
+    });
   };
 
   /**
@@ -125,6 +143,16 @@ export default function ViewTask({ route, navigation }) {
     if (updatedTasks) {
       setTasks(updatedTasks);
     }
+
+    // Show delete toast
+    Toast.show({
+      type: 'error',
+      text1: 'Task deleted successfully!',
+      text2: 'Task has been removed',
+      visibilityTime: 4000,
+      position: 'bottom',
+      bottomOffset: 80,
+    });
   };
 
   /**
@@ -145,6 +173,16 @@ export default function ViewTask({ route, navigation }) {
         setTasks(updatedTasks);
         resetEditingState();
       }
+
+      // Show edit toast
+      Toast.show({
+        type: 'info',
+        text1: 'Task edited successfully!',
+        text2: 'Task details have been updated',
+        visibilityTime: 4000,
+        position: 'bottom',
+        bottomOffset: 80,
+      });
     }
   };
 

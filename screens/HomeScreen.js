@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, Alert, SafeAreaView } from 'react-native';
+import Toast from 'react-native-toast-message';
 import AddButton from '../components/AddButton';
 import SubjectList from '../components/SubjectList';
 import ContextMenu from '../components/ContextMenu';
@@ -100,6 +101,17 @@ export default function HomeScreen({ route, navigation }) {
             },
           },
         };
+
+        // Show success toast
+        Toast.show({
+          type: 'success',
+          text1: 'Course added successfully!',
+          text2: `${subjectName} has been added.`,
+          visibilityTime: 4000,
+          position: 'bottom',
+          bottomOffset: 80,
+        });
+
         return updatedData;
       });
     }
@@ -132,6 +144,16 @@ export default function HomeScreen({ route, navigation }) {
         delete updatedData[selectedProgram][selectedYrLevel].subjects[subjectToDelete];
       }
 
+      // Show delete toast
+      Toast.show({
+        type: 'error',
+        text1: 'Course deleted successfully!',
+        text2: `${subjectToDelete} has been removed.`,
+        visibilityTime: 4000,
+        position: 'bottom',
+        bottomOffset: 80,
+      });
+
       return updatedData;
     });
   };
@@ -154,6 +176,16 @@ export default function HomeScreen({ route, navigation }) {
         delete updatedData[selectedProgram][selectedYrLevel].subjects[oldSubjectName];
         updatedData[selectedProgram][selectedYrLevel].subjects[newSubjectName] = tasks;
       }
+
+      // Show edit toast
+      Toast.show({
+        type: 'info',
+        text1: 'Course renamed successfully!',
+        text2: `${oldSubjectName} is now ${newSubjectName}.`,
+        visibilityTime: 4000,
+        position: 'bottom',
+        bottomOffset: 80,
+      });
 
       return updatedData;
     });

@@ -7,6 +7,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { MenuProvider } from 'react-native-popup-menu';
+import Toast from 'react-native-toast-message';
 import HomeScreen from './screens/HomeScreen';
 import ProfileScreen from './screens/ProfileScreen';
 import AboutScreen from './screens/AboutScreen';
@@ -161,6 +162,7 @@ export default function App() {
           </Stack.Navigator>
 
           <StatusBar style="auto" />
+          <Toast />
         </NavigationContainer>
       </MenuProvider>
     </AppLoading>
