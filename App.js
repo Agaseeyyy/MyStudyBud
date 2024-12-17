@@ -220,6 +220,7 @@ function BottomBar({ route }) {
           
             if (route.name == 'Home') {
               iconName = focused ? 'home' : 'home-outline';
+              setStudentName(route.params?.studentName || 'Student');
             } else if (route.name === 'Profile') {
               iconName = focused ? 'person' : 'person-outline';
             } else if (route.name === 'About us') {

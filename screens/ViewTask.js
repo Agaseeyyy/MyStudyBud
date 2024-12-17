@@ -328,6 +328,28 @@ export default function ViewTask({ route, navigation }) {
               </Text>
             </Pressable>
           </View>
+
+          {/* Date Picker */}
+          {showDatePicker && (
+            <DateTimePicker
+              testID="datePicker"
+              value={editingTaskDateTime}
+              mode="date"
+              display="default"
+              onChange={(event, selectedDate) => {
+                setShowDatePicker(false);
+                if (selectedDate) {
+                  // Preserve the existing time when updating the date
+                  const updatedDateTime = new Date(selectedDate);
+                  updatedDateTime.setHours(
+                    editingTaskDateTime.getHours(), 
+                    editingTaskDateTime.getMinutes()
+                  );
+                  setEditingTaskDateTime(updatedDateTime);
+                }
+              }}
+            />
+          )}
     
           {/* Time Picker */}          
           {showTimePicker && (
@@ -339,7 +361,14 @@ export default function ViewTask({ route, navigation }) {
               display="default"
               onChange={(event, selectedTime) => {
                 setShowTimePicker(false);
-                setEditingTaskDateTime(selectedTime || editingTaskDateTime);
+                if (selectedTime) {
+                  const updatedDateTime = new Date(editingTaskDateTime);
+                  updatedDateTime.setHours(
+                    selectedTime.getHours(), 
+                    selectedTime.getMinutes()
+                  );
+                  setEditingTaskDateTime(updatedDateTime);
+                }
               }}
             />
           )}

@@ -91,10 +91,6 @@ const scheduleTaskNotification = async (
 ) => {
   const taskDeadline = new Date(task.dateTime);
   
-  // Calculate notification times
-  const oneDayBefore = new Date(taskDeadline.getTime() - 24 * 60 * 60 * 1000);
-  const oneHourBefore = new Date(taskDeadline.getTime() - 60 * 60 * 1000);
-
   try {
     // Notification for 1 day before deadline
     await Notifications.scheduleNotificationAsync({
@@ -109,7 +105,9 @@ const scheduleTaskNotification = async (
           taskIndex 
         }
       },
-      trigger: oneDayBefore,
+      trigger: {
+        date: new Date(taskDeadline.getTime() - 24 * 60 * 60 * 1000)
+      },
     });
 
     // Notification for 1 hour before deadline
@@ -125,7 +123,9 @@ const scheduleTaskNotification = async (
           taskIndex 
         }
       },
-      trigger: oneHourBefore,
+      trigger: {
+        date: new Date(taskDeadline.getTime() - 60 * 60 * 1000)
+      },
     });
   } catch (error) {
     console.error('Error scheduling task notification:', error);
